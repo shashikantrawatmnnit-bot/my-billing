@@ -17,9 +17,9 @@ table.bill{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
 .no-border{border:none}
 input.bill-input{width:100%;border:none;outline:none}
 
-/* PRINT */
+/* PDF -- inorder to change top margin in PDF file edit "margin-top"PRINT */
 @media print{
- @page{size:A4;margin-top:14cm;margin-left:1cm;margin-right:1cm;margin-bottom:2cm}
+ @page{size:A4;margin-top:7cm;margin-left:1cm;margin-right:1cm;margin-bottom:2cm}
  header,footer,.no-print{display:none!important}
  .container,.card,.card-body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;box-shadow:none!important;border:none!important}
 }
@@ -31,7 +31,7 @@ input.bill-input{width:100%;border:none;outline:none}
 
 <header class="navbar navbar-dark bg-primary no-print">
  <div class="container-fluid">
-  <span class="navbar-brand">🧾RADHESHYAM Billing System</span>
+  <span class="navbar-brand">🧾राधे श्याम Billing System</span>
   <div>
     <button class="btn btn-light btn-sm" onclick="openHistory()">📂 Past Bills</button>
     <button class="btn btn-light btn-sm" onclick="window.print()">🖨 Print</button>
