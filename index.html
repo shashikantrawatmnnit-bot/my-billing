@@ -35,6 +35,13 @@ input.bill-input{width:100%;border:none;outline:none}
   <div>
     <button class="btn btn-light btn-sm" onclick="openHistory()">📂 Past Bills</button>
     <button class="btn btn-light btn-sm" onclick="window.print()">🖨 Print</button>
+    <button class="btn btn-warning btn-sm" onclick="exportJSON()">⬇ Export JSON</button>
+
+<label class="btn btn-info btn-sm mb-0">
+  ⬆ Import JSON
+  <input type="file" accept=".json" hidden onchange="importJSON(this.files[0])">
+</label>
+
   </div>
  </div>
 </header>
@@ -353,6 +360,74 @@ function exportExcel(){
     XLSX.writeFile(wb, fileName);
 }
 </script>
+<script>
+/* ===============================
+   EXPORT ALL BILLS TO JSON FILE
+================================ */
+function exportJSON(){
+
+    let bills = [];
+
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("bill_"))
+      .forEach(k => {
+          bills.push(JSON.parse(localStorage.getItem(k)));
+      });
+
+    if(bills.length === 0){
+        alert("No bills found to export");
+        return;
+    }
+
+    const blob = new Blob(
+        [JSON.stringify(bills, null, 2)],
+        { type: "application/json" }
+    );
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bills_database.json";
+    a.click();
+}
+
+/* ===============================
+   IMPORT BILLS FROM JSON FILE
+================================ */
+function importJSON(file){
+
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+        try{
+            const data = JSON.parse(e.target.result);
+
+            if(!Array.isArray(data)){
+                alert("Invalid JSON format");
+                return;
+            }
+
+            data.forEach(bill => {
+                if(bill.billNo){
+                    localStorage.setItem(
+                        "bill_" + bill.billNo,
+                        JSON.stringify(bill)
+                    );
+                }
+            });
+
+            alert("JSON data imported successfully");
+        }
+        catch(err){
+            alert("Error reading JSON file");
+        }
+    };
+
+    reader.readAsText(file);
+}
+</script>
+
 
 
 </body>
