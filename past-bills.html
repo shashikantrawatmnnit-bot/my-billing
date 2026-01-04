@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Past Bills</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+<div class="container my-4">
+<h4>Past Bill Editor</h4>
+<div id="content"></div>
+<a href="index.html" class="btn btn-secondary mt-3">⬅ Back</a>
+</div>
+
+<script>
+const idx=new URLSearchParams(window.location.search).get("i");
+let bills=JSON.parse(localStorage.getItem("bills")||"[]");
+
+if(!bills[idx]){
+  content.innerHTML="Bill not found";
+}else{
+  let b=bills[idx];
+  content.innerHTML=`
+  <div class="card p-3">
+  <b>Bill ID:</b> ${b.id}<br>
+  <b>Date:</b> <input id="d" value="${b.date}"><br>
+  <b>Site:</b> <input id="s" value="${b.site}"><br>
+  <b>Total:</b> ${b.total}<br><br>
+  <button class="btn btn-success" onclick="update()">Update</button>
+  <button class="btn btn-danger" onclick="del()">Delete</button>
+  </div>`;
+}
+
+function update(){
+  bills[idx].date=d.value;
+  bills[idx].site=s.value;
+  localStorage.setItem("bills",JSON.stringify(bills));
+  alert("Updated");
+}
+
+function del(){
+  if(confirm("Delete bill?")){
+    bills.splice(idx,1);
+    localStorage.setItem("bills",JSON.stringify(bills));
+    location.href="index.html";
+  }
+}
+</script>
+</body>
+</html>

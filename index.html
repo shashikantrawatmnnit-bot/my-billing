@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bill Generator</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f4f6f9;font-family:Arial}
+
+/* BILL TABLE */
+table.bill{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+.bill th,.bill td{border:1px solid #000;padding:6px}
+.bill th{text-align:center}
+.right{text-align:right}
+.no-border{border:none}
+input.bill-input{width:100%;border:none;outline:none}
+
+/* PRINT */
+@media print{
+ @page{size:A4;margin-top:14cm;margin-left:1cm;margin-right:1cm;margin-bottom:2cm}
+ header,footer,.no-print{display:none!important}
+ .container,.card,.card-body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;box-shadow:none!important;border:none!important}
+}
+</style>
+</head>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<body>
+
+<header class="navbar navbar-dark bg-primary no-print">
+ <div class="container-fluid">
+  <span class="navbar-brand">🧾RADHESHYAM Billing System</span>
+  <div>
+    <button class="btn btn-light btn-sm" onclick="openHistory()">📂 Past Bills</button>
+    <button class="btn btn-light btn-sm" onclick="window.print()">🖨 Print</button>
+  </div>
+ </div>
+</header>
+
+<div class="container my-4">
+
+<div class="card mb-3 no-print">
+<div class="card-body d-flex justify-content-between">
+<div>
+<b>Bill Type:</b>
+<label class="ms-2"><input type="radio" name="gstType" value="with" checked onclick="calculate()"> With GST</label>
+<label class="ms-3"><input type="radio" name="gstType" value="without" onclick="calculate()"> Without GST</label>
+</div>
+<div>
+<button class="btn btn-success btn-sm" onclick="handleSave()">💾 Save Bill</button>
+<button class="btn btn-success btn-sm" onclick="exportExcel()">📊 Export Excel</button>
+
+</div>
+</div>
+</div>
+
+<div class="card shadow">
+<div class="card-body">
+
+<table class="bill">
+
+<tr>
+<td colspan="6" class="right no-border">
+<b>Date :</b>
+<input type="date" id="billDate" class="bill-input" style="width:auto">
+</td>
+</tr>
+
+<tr>
+<td colspan="6" class="no-border">
+<b>Site :</b>
+<input id="site" value="" class="bill-input" style="width:auto">
+</td>
+</tr>
+
+<tr>
+<th>S.No</th><th>Description</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Amount</th>
+</tr>
+
+<tbody id="items">
+<tr>
+<td class="text-center">1</td>
+<td><input class="bill-input"></td>
+<td><input class="bill-input"></td>
+<td><input type="number" class="bill-input" oninput="calculate()"></td>
+<td><input type="number" class="bill-input" oninput="calculate()"></td>
+<td class="right amount">0.00</td>
+</tr>
+</tbody>
+
+<tr><td colspan="5" class="right"><b>Sub Total</b></td><td class="right" id="subTotal">0.00</td></tr>
+<tr id="sgstRow"><td colspan="5" class="right">ADD : SGST 9%</td><td class="right" id="sgst">0.00</td></tr>
+<tr id="cgstRow"><td colspan="5" class="right">ADD : CGST 9%</td><td class="right" id="cgst">0.00</td></tr>
+<tr><td colspan="5" class="right"><b>TOTAL AMOUNT (Rs)</b></td><td class="right"><b id="grandTotal">0.00</b></td></tr>
+
+<tr>
+<td colspan="6"><b>Amount in Words :</b><br><span id="amountWords"></span></td>
+</tr>
+
+<tr>
+<td colspan="6" class="right no-border" style="padding-top:40px">
+SIGN -----------------------------<br>(RADHESHYAM)
+</td>
+</tr>
+
+</table>
+
+<button class="btn btn-outline-secondary btn-sm mt-2 no-print" onclick="addRow()">➕ Add Item</button>
+
+</div>
+</div>
+
+</div>
+
+<footer class="bg-light text-center py-2 no-print">
+<small>© Billing System</small>
+</footer>
+
+<!-- PAST BILL MODAL -->
+<div class="modal fade no-print" id="historyModal">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">Past Bills</h5>
+<button class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body" id="historyBody"></div>
+</div>
+</div>
+</div>
+
+<!-- SAVE OPTION MODAL -->
+<div class="modal fade no-print" id="saveOptionModal">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">Save Bill</h5>
+<button class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body text-center">
+<p><b>How do you want to save this bill?</b></p>
+<button class="btn btn-primary m-2" onclick="saveBill(false)">💾 Normal Save</button>
+<button class="btn btn-success m-2" onclick="saveBill(true)">➕ Save as New Bill</button>
+</div>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let editBillNo = new URLSearchParams(window.location.search).get("edit");
+
+/* ADD ROW */
+function addRow(){
+ let t=items.rows.length+1;
+ let r=items.insertRow();
+ r.innerHTML=`
+ <td class="text-center">${t}</td>
+ <td><input class="bill-input"></td>
+ <td><input class="bill-input"></td>
+ <td><input type="number" class="bill-input" oninput="calculate()"></td>
+ <td><input type="number" class="bill-input" oninput="calculate()"></td>
+ <td class="right amount">0.00</td>`;
+}
+
+/* CALC */
+function calculate(){
+ let sub=0;
+ [...items.rows].forEach(r=>{
+  let q=r.cells[3].children[0].value||0;
+  let rate=r.cells[4].children[0].value||0;
+  let a=q*rate;
+  r.querySelector(".amount").innerText=a.toFixed(2);
+  sub+=a;
+ });
+ let type=document.querySelector('input[name="gstType"]:checked').value;
+ let sg=0,cg=0,total=sub;
+ if(type==="with"){sg=sub*0.09;cg=sub*0.09;total=sub+sg+cg;sgstRow.style.display="";cgstRow.style.display=""}
+ else{sgstRow.style.display="none";cgstRow.style.display="none"}
+ subTotal.innerText=sub.toFixed(2);
+ sgst.innerText=sg.toFixed(2);
+ cgst.innerText=cg.toFixed(2);
+ grandTotal.innerText=total.toFixed(2);
+ amountWords.innerText=amountInWords(total);
+}
+
+/* SAVE HANDLER */
+function handleSave(){
+ if(editBillNo){
+  new bootstrap.Modal(saveOptionModal).show();
+ }else{
+  saveBill(false);
+ }
+}
+
+/* SAVE */
+function saveBill(saveAsNew){
+ let billNo = (editBillNo && !saveAsNew) ? editBillNo : "BILL-"+Date.now();
+ let data={
+  billNo,
+  date:billDate.value,
+  site:site.value,
+  gstType:document.querySelector('input[name="gstType"]:checked').value,
+  items:[...items.rows].map(r=>({
+   desc:r.cells[1].children[0].value,
+   unit:r.cells[2].children[0].value,
+   qty:r.cells[3].children[0].value,
+   rate:r.cells[4].children[0].value,
+   amount:r.querySelector(".amount").innerText
+  })),
+  total:grandTotal.innerText,
+  words:amountWords.innerText
+ };
+ localStorage.setItem("bill_"+billNo,JSON.stringify(data));
+ bootstrap.Modal.getInstance(saveOptionModal)?.hide();
+ alert("Saved : "+billNo);
+ if(saveAsNew) location.href="index.html?edit="+billNo;
+}
+
+/* HISTORY */
+function openHistory(){
+ let h=`<table class="table table-sm"><tr><th>Bill No</th><th>Date</th><th>Site</th><th>Total</th><th>Action</th></tr>`;
+ Object.keys(localStorage).filter(k=>k.startsWith("bill_")).forEach(k=>{
+  let b=JSON.parse(localStorage.getItem(k));
+  h+=`<tr>
+  <td>${b.billNo}</td><td>${b.date}</td><td>${b.site}</td><td>${b.total}</td>
+  <td>
+   <a class="btn btn-sm btn-primary" href="index.html?edit=${b.billNo}">Edit</a>
+   <button class="btn btn-sm btn-danger" onclick="delBill('${b.billNo}')">Delete</button>
+  </td>
+  </tr>`;
+ });
+ h+=`</table>`;
+ historyBody.innerHTML=h;
+ new bootstrap.Modal(historyModal).show();
+}
+
+/* DELETE */
+function delBill(no){
+ if(confirm("Delete "+no+" ?")){
+  localStorage.removeItem("bill_"+no);
+  openHistory();
+ }
+}
+
+/* LOAD FOR EDIT */
+if(editBillNo){
+ let b=JSON.parse(localStorage.getItem("bill_"+editBillNo));
+ if(b){
+  billDate.value=b.date;
+  site.value=b.site;
+  document.querySelector(`input[value="${b.gstType}"]`).checked=true;
+  items.innerHTML="";
+  b.items.forEach(()=>addRow());
+  b.items.forEach((it,i)=>{
+   let r=items.rows[i];
+   r.cells[1].children[0].value=it.desc;
+   r.cells[2].children[0].value=it.unit;
+   r.cells[3].children[0].value=it.qty;
+   r.cells[4].children[0].value=it.rate;
+  });
+  calculate();
+ }
+}
+
+/* WORDS */
+function amountInWords(num){
+ num=Math.round(num*100)/100;
+ const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+ const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+ const two=n=>n<20?a[n]:b[Math.floor(n/10)]+' '+a[n%10];
+ const three=n=>n>99?a[Math.floor(n/100)]+' Hundred '+two(n%100):two(n);
+ let r=Math.floor(num),p=Math.round((num-r)*100),s='';
+ if(r>=100000){s+=three(Math.floor(r/100000))+' Lakh ';r%=100000}
+ if(r>=1000){s+=three(Math.floor(r/1000))+' Thousand ';r%=1000}
+ if(r>0)s+=three(r);
+ return s+' Rupees and '+two(p)+' Paise Only';
+}
+
+
+</script>
+<script>
+function exportExcel(){
+
+    let rows = [];
+
+    /* ===== HEADER INFO ===== */
+    rows.push(["Date", billDate.value || ""]);
+    rows.push(["Site", site.value || ""]);
+    rows.push([]); // blank line
+
+    /* ===== TABLE HEADER ===== */
+    rows.push([
+        "S.No",
+        "Description",
+        "Unit",
+        "Quantity",
+        "Rate",
+        "Amount"
+    ]);
+
+    /* ===== ITEM ROWS ===== */
+    [...items.rows].forEach((r, i) => {
+        rows.push([
+            i + 1,
+            r.cells[1].children[0].value,
+            r.cells[2].children[0].value,
+            r.cells[3].children[0].value,
+            r.cells[4].children[0].value,
+            r.querySelector(".amount").innerText
+        ]);
+    });
+
+    rows.push([]); // blank
+
+    /* ===== SUMMARY ===== */
+    rows.push(["", "", "", "", "Sub Total", subTotal.innerText]);
+
+    if(document.querySelector('input[name="gstType"]:checked').value === "with"){
+        rows.push(["", "", "", "", "SGST 9%", sgst.innerText]);
+        rows.push(["", "", "", "", "CGST 9%", cgst.innerText]);
+    }
+
+    rows.push(["", "", "", "", "TOTAL", grandTotal.innerText]);
+    rows.push([]);
+
+    /* ===== AMOUNT IN WORDS ===== */
+    rows.push(["Amount in Words", amountWords.innerText]);
+    rows.push([]);
+
+    /* ===== SIGNATURE ===== */
+    rows.push(["SIGN", "RADHESHYAM"]);
+
+    /* ===== CREATE SHEET ===== */
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    ws['!cols'] = [
+        { wch: 8 },
+        { wch: 30 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 16 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Bill");
+
+    const fileName = `Bill_${site.value || "Site"}_${billDate.value || "Date"}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+}
+</script>
+
+
+</body>
+</html>
