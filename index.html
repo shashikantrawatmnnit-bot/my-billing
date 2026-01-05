@@ -115,6 +115,10 @@ SIGN -----------------------------<br>(RADHESHYAM)
 </table>
 
 <button class="btn btn-outline-secondary btn-sm mt-2 no-print" onclick="addRow()">➕ Add Item</button>
+<button class="btn btn-outline-danger btn-sm mt-2 no-print" onclick="deleteLastRow()">
+  ➖ Delete Item
+</button>
+
 
 </div>
 </div>
@@ -426,6 +430,28 @@ function importJSON(file){
 
     reader.readAsText(file);
 }
+function deleteLastRow(){
+
+    const tbody = document.getElementById("items");
+
+    // ❌ at least 1 row must remain
+    if(tbody.rows.length <= 1){
+        alert("At least one item is required");
+        return;
+    }
+
+    // ✅ remove last added row
+    tbody.deleteRow(tbody.rows.length - 1);
+
+    // 🔄 re-number S.No
+    [...tbody.rows].forEach((row, index) => {
+        row.cells[0].innerText = index + 1;
+    });
+
+    // 🔄 recalculate totals
+    calculate();
+}
+
 </script>
 
 
