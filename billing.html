@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bill Generator</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f4f6f9;font-family:Arial}
+
+/* TABLE */
+table.bill{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+.bill th,.bill td{border:1px solid #000;padding:6px}
+.bill th{text-align:center}
+.right{text-align:right}
+.no-border{border:none}
+input.bill-input{width:100%;border:none;outline:none}
+
+/* PDF -- inorder to change top margin in PDF file edit "margin-top"PRINT */
+@media print{
+ @page{size:A4;margin-top:7cm;margin-left:1cm;margin-right:1cm;margin-bottom:2cm}
+ header,footer,  .no-print,.action-col {display: none !important;}
+ .container,.card,.card-body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;box-shadow:none!important;border:none!important}
+}
+</style>
+</head>
+
+<body>
+
+<header class="navbar navbar-dark bg-primary no-print">
+ <div class="container-fluid">
+  <span class="navbar-brand">🧾 Billing System</span>
+  <div>
+    <button class="btn btn-light btn-sm" onclick="openHistory()">📂 Past Bills</button>
+    <button class="btn btn-light btn-sm" onclick="exportJSON()">⬇ Export JSON</button>
+    <label class="btn btn-light btn-sm mb-0">
+      ⬆ Import JSON
+      <input type="file" hidden accept=".json" onchange="importJSON(this.files[0])">
+    </label>
+    <button class="btn btn-light btn-sm" onclick="window.print()">🖨 Print</button>
+  </div>
+ </div>
+</header>
+
+<div class="container my-3">
+
+<div class="card no-print mb-2">
+<div class="card-body d-flex justify-content-between">
+<div>
+<b>GST:</b>
+<label class="ms-2"><input type="radio" name="gstType" value="with" checked onclick="calculate()"> With</label>
+<label class="ms-2"><input type="radio" name="gstType" value="without" onclick="calculate()"> Without</label>
+</div>
+<button class="btn btn-success btn-sm" onclick="handleSave()">💾 Save Bill</button>
+</div>
+</div>
+
+<div class="card">
+<div class="card-body">
+
+<table class="bill">
+<thead>
+<tbody>
+<tr>
+  <td colspan="7" class="right no-border">
+    <b>Date :</b>
+    <input type="date" id="billDate" class="bill-input" style="width:auto">
+  </td>
+</tr>
+
+<tr>
+  <td colspan="7" class="no-border">
+    <b>Site :</b>
+    <input type="text" id="siteName" class="bill-input" placeholder="Enter site name">
+  </td>
+</tr>
+</tbody>
+
+<tr>
+<th>S.No</th><th>Description</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Amount</th>
+<th class="action-col no-print">Action</th>
+</tr>
+</thead>
+
+<tbody id="items"></tbody>
+
+<tfoot>
+<tr><td colspan="5" class="right">Sub Total</td><td class="right" id="subTotal">0.00</td><td class="action-col"></td></tr>
+<tr id="sgstRow"><td colspan="5" class="right">SGST 9%</td><td class="right" id="sgst">0.00</td><td class="action-col"></td></tr>
+<tr id="cgstRow"><td colspan="5" class="right">CGST 9%</td><td class="right" id="cgst">0.00</td><td class="action-col"></td></tr>
+<tr><td colspan="5" class="right"><b>Total</b></td><td class="right"><b id="grandTotal">0.00</b></td><td class="action-col"></td></tr>
+
+<tr>
+<td colspan="7">
+<b>Amount in Words :</b> <span id="amountWords"></span>
+</td>
+</tr>
+
+<!-- SIGNATURE ROW (FIXED) -->
+<tr>
+<td colspan="7" class="right no-border" style="padding-top:40px">
+SIGN ___________________________<br>
+<b>(RADHESHYAM)</b>
+</td>
+</tr>
+
+</tfoot>
+</table>
+
+<button class="btn btn-outline-secondary btn-sm mt-2 no-print" onclick="addRow()">➕ Add Item</button>
+
+</div>
+</div>
+</div>
+
+<footer class="text-center py-2 no-print">
+<small>© Billing System</small>
+</footer>
+
+<!-- PAST BILL MODAL -->
+<div class="modal fade no-print" id="historyModal">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">Past Bills</h5>
+<button class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body" id="historyBody"></div>
+</div>
+</div>
+</div>
+
+<!-- SAVE OPTION MODAL -->
+<div class="modal fade no-print" id="saveOptionModal">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">Save Bill</h5>
+<button class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body text-center">
+<p><b>How do you want to save this bill?</b></p>
+<button class="btn btn-primary m-2" onclick="saveBill(false)">💾 Normal Save</button>
+<button class="btn btn-success m-2" onclick="saveBill(true)">➕ Save as New Bill</button>
+</div>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const items=document.getElementById("items");
+let editBillNo=null;
+
+/* ===== ROW FACTORY ===== */
+function createItemRow(d={}){
+ const r=items.insertRow();
+ r.innerHTML=`
+ <td></td>
+ <td><input class="bill-input" value="${d.desc||''}"></td>
+ <td><input class="bill-input" value="${d.unit||''}"></td>
+ <td><input type="number" class="bill-input" value="${d.qty||''}" oninput="calculate()"></td>
+ <td><input type="number" class="bill-input" value="${d.rate||''}" oninput="calculate()"></td>
+ <td class="right amount">0.00</td>
+ <td class="text-center action-col no-print">
+  <button class="btn btn-sm btn-outline-secondary" onclick="moveUp(this)">⬆</button>
+  <button class="btn btn-sm btn-outline-secondary" onclick="moveDown(this)">⬇</button>
+  <button class="btn btn-sm btn-outline-danger" onclick="deleteRow(this)">✖</button>
+ </td>`;
+ reindex(); calculate();
+}
+function addRow(){createItemRow();}
+function reindex(){[...items.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
+
+/* MOVE */
+function moveUp(b){let r=b.closest("tr"),p=r.previousElementSibling;if(p)items.insertBefore(r,p),reindex(),calculate();}
+function moveDown(b){let r=b.closest("tr"),n=r.nextElementSibling;if(n)items.insertBefore(n,r),reindex(),calculate();}
+
+/* DELETE */
+function deleteRow(b){
+ if(items.rows.length<=1){alert("At least one item required");return;}
+ if(confirm("Delete this item?")){b.closest("tr").remove();reindex();calculate();}
+}
+
+/* CALC */
+function calculate(){
+ let sub=0;
+ [...items.rows].forEach(r=>{
+  let q=r.cells[3].children[0].value||0;
+  let rt=r.cells[4].children[0].value||0;
+  let a=q*rt;
+  r.querySelector(".amount").innerText=a.toFixed(2);
+  sub+=a;
+ });
+ let gst=document.querySelector('input[name="gstType"]:checked').value;
+ let sg=0,cg=0,tot=sub;
+ if(gst==="with"){sg=sub*0.09;cg=sub*0.09;tot=sub+sg+cg;sgstRow.style.display="";cgstRow.style.display="";}
+ else{sgstRow.style.display="none";cgstRow.style.display="none";}
+ subTotal.innerText=sub.toFixed(2);
+ sgst.innerText=sg.toFixed(2);
+ cgst.innerText=cg.toFixed(2);
+ grandTotal.innerText=tot.toFixed(2);
+ amountWords.innerText=words(tot);
+}
+
+/* WORDS */
+function words(n){
+ const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+ const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+ const t=x=>x<20?a[x]:b[Math.floor(x/10)]+' '+a[x%10];
+ let r=Math.floor(n),p=Math.round((n-r)*100),s='';
+ if(r>=100000){s+=t(Math.floor(r/100000))+' Lakh ';r%=100000}
+ if(r>=1000){s+=t(Math.floor(r/1000))+' Thousand ';r%=1000}
+ if(r>0)s+=t(r);
+ return s+' Rupees and '+t(p)+' Paise Only';
+}
+
+/* ===== SAVE HANDLER ===== */
+function handleSave(){
+ if(editBillNo){
+  new bootstrap.Modal(saveOptionModal).show();
+ }else{
+  saveBill(false);
+ }
+}
+function saveBill(saveAsNew){
+  let billNo = (editBillNo && !saveAsNew)
+    ? editBillNo
+    : "BILL-" + Date.now();
+
+  let data = {
+    billNo,
+    date: billDate.value,
+    site: siteName.value,
+    gstType: document.querySelector('input[name="gstType"]:checked').value,
+    items: [...items.rows].map(r => ({
+      desc: r.cells[1].children[0].value,
+      unit: r.cells[2].children[0].value,
+      qty: r.cells[3].children[0].value,
+      rate: r.cells[4].children[0].value,
+      amount: r.querySelector(".amount").innerText
+    })),
+    subTotal: subTotal.innerText,
+    sgst: sgst.innerText,
+    cgst: cgst.innerText,
+    total: grandTotal.innerText,
+    words: amountWords.innerText,
+    createdAt: new Date().toISOString()
+  };
+
+  localStorage.setItem("bill_" + billNo, JSON.stringify(data));
+  editBillNo = billNo;
+
+  bootstrap.Modal.getInstance(saveOptionModal)?.hide();
+  alert("Saved : " + billNo);
+}
+
+
+/* ===== PAST BILLS ===== */
+function openHistory(){
+  let html = `
+  <table class="table table-sm table-bordered">
+    <thead>
+      <tr>
+        <th>Bill No</th>
+        <th>Date</th>
+        <th>Site</th>
+        <th>Total Amount</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  Object.keys(localStorage)
+    .filter(k => k.startsWith("bill_"))
+    .forEach(k => {
+      let b = JSON.parse(localStorage.getItem(k));
+      html += `
+      <tr>
+        <td>${b.billNo}</td>
+        <td>${b.date || "-"}</td>
+        <td>${b.site || "-"}</td>
+        <td class="right">${b.total || "0.00"}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="loadBill('${b.billNo}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBill('${b.billNo}')">Delete</button>
+        </td>
+      </tr>`;
+    });
+
+  html += `</tbody></table>`;
+  historyBody.innerHTML = html;
+  new bootstrap.Modal(historyModal).show();
+}
+
+function loadBill(no){
+  let b = JSON.parse(localStorage.getItem("bill_" + no));
+  if(!b) return;
+
+  // header
+  billDate.value = b.date || "";
+  siteName.value = b.site || "";
+
+  // GST type
+  document.querySelector(`input[name="gstType"][value="${b.gstType}"]`).checked = true;
+
+  // items
+  items.innerHTML = "";
+  b.items.forEach(it => createItemRow(it));
+
+  editBillNo = no;
+  calculate();
+
+  bootstrap.Modal.getInstance(historyModal).hide();
+}
+
+
+/* JSON EXPORT / IMPORT */
+function exportJSON(){
+ let arr=[];
+ Object.keys(localStorage).filter(k=>k.startsWith("bill_"))
+ .forEach(k=>arr.push(JSON.parse(localStorage.getItem(k))));
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(arr,null,2)],{type:"application/json"}));
+ a.download="bills.json";a.click();
+}
+function importJSON(f){
+ let r=new FileReader();
+ r.onload=e=>{
+  let d=JSON.parse(e.target.result);
+  d.forEach(b=>localStorage.setItem("bill_"+b.billNo,JSON.stringify(b)));
+  alert("Imported successfully");
+ };
+ r.readAsText(f);
+}
+
+/* INIT */
+createItemRow();
+</script>
+
+</body>
+</html>

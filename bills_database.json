@@ -1,0 +1,103 @@
+[
+{
+  "billNo": "BILL-1767555808000",
+  "date": "",
+  "site": "Mr Srikant (Thonde Bhavi Farmhouse)",
+  "gstType": "with",
+  "items": [
+    {
+      "desc": "Melamine polish",
+      "unit": "SFT",
+      "qty": "2116.34",
+      "rate": "115",
+      "amount": "243379.10"
+    },
+    {
+      "desc": "1' Melamine Polish",
+      "unit": "RFT",
+      "qty": "3305.08",
+      "rate": "45",
+      "amount": "148728.60"
+    },
+    {
+      "desc": "2'-5' Melamine Polish",
+      "unit": "RFT",
+      "qty": "1632.10",
+      "rate": "50",
+      "amount": "81605.00"
+    },
+    {
+      "desc": "PU DUCO",
+      "unit": "SFT",
+      "qty": "359.96",
+      "rate": "285",
+      "amount": "102588.60"
+    },
+    {
+      "desc": "Melamine polish",
+      "unit": "SFT",
+      "qty": "1100",
+      "rate": "115",
+      "amount": "126500.00"
+    },
+    {
+      "desc": "1' Melamine Polish",
+      "unit": "RFT",
+      "qty": "2170",
+      "rate": "45",
+      "amount": "97650.00"
+    },
+    {
+      "desc": "Primer and putty",
+      "unit": "SFT",
+      "qty": "619.98",
+      "rate": "15",
+      "amount": "9299.70"
+    },
+    {
+      "desc": "PU DUCO",
+      "unit": "SFT",
+      "qty": "90.75",
+      "rate": "285",
+      "amount": "25863.75"
+    },
+    {
+      "desc": "Enamel paint",
+      "unit": "SFT",
+      "qty": "1793.75",
+      "rate": "35",
+      "amount": "62781.25"
+    },
+    {
+      "desc": "Royal emulsion",
+      "unit": "SFT",
+      "qty": "2256.50",
+      "rate": "42",
+      "amount": "94773.00"
+    },
+    {
+      "desc": "Apex ultima",
+      "unit": "SFT",
+      "qty": "1844.95",
+      "rate": "35",
+      "amount": "64573.25"
+    },
+    {
+      "desc": "Premium emulsion gypsum",
+      "unit": "SFT",
+      "qty": "1255.72",
+      "rate": "25",
+      "amount": "31393.00"
+    },
+    {
+      "desc": "Shera board melamine polish",
+      "unit": "SFT",
+      "qty": "1255.72",
+      "rate": "115",
+      "amount": "144407.80"
+    }
+  ],
+  "total": "1455580.80",
+  "words": "Fourteen Lakh Fifty-Five Thousand Five Hundred Eighty Rupees and Eighty Paise Only"
+}
+]
