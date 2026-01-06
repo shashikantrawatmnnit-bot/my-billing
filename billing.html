@@ -16,6 +16,10 @@ table.bill{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
 .right{text-align:right}
 .no-border{border:none}
 input.bill-input{width:100%;border:none;outline:none}
+.date-cell{
+  text-align: right;
+}
+
 
 /* PDF -- inorder to change top margin in PDF file edit "margin-top"PRINT */
 @media print{
@@ -74,10 +78,10 @@ input.bill-input{width:100%;border:none;outline:none}
 <thead>
 <tbody>
 <tr>
-  <td colspan="7" class="right no-border">
+  <td colspan="7" class="no-border date-cell">
     <b>Date :</b>
     <input type="date" id="billDate" class="bill-input date-input">
-
+    
   </td>
 </tr>
 
