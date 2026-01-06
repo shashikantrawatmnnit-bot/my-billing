@@ -22,6 +22,17 @@ input.bill-input{width:100%;border:none;outline:none}
  @page{size:A4;margin-top:7cm;margin-left:1cm;margin-right:1cm;margin-bottom:2cm}
  header,footer,  .no-print,.action-col {display: none !important;}
  .container,.card,.card-body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;box-shadow:none!important;border:none!important}
+
+   input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none;
+  }
+
+  input[type="date"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+  }
 }
 </style>
 </head>
@@ -65,7 +76,8 @@ input.bill-input{width:100%;border:none;outline:none}
 <tr>
   <td colspan="7" class="right no-border">
     <b>Date :</b>
-    <input type="date" id="billDate" class="bill-input" style="width:auto">
+    <input type="date" id="billDate" class="bill-input date-input">
+
   </td>
 </tr>
 
@@ -338,6 +350,16 @@ function importJSON(f){
 
 /* INIT */
 createItemRow();
+
+
+function beforePrint(){
+  document.getElementById("printDate").innerText =
+    "Date : " + billDate.value;
+  document.getElementById("printDate").classList.remove("d-none");
+}
+
+window.onbeforeprint = beforePrint;
+
 </script>
 
 </body>
