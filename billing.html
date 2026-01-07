@@ -242,44 +242,65 @@ function words(n){
 }
 
 /* ===== SAVE HANDLER ===== */
-function handleSave(){
- if(editBillNo){
-  new bootstrap.Modal(saveOptionModal).show();
- }else{
-  saveBill(false);
- }
+function words(num) {
+  num = Number(num);
+  if (isNaN(num)) return "";
+
+  const a = [
+    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
+    "Sixteen", "Seventeen", "Eighteen", "Nineteen"
+  ];
+
+  const b = [
+    "", "", "Twenty", "Thirty", "Forty", "Fifty",
+    "Sixty", "Seventy", "Eighty", "Ninety"
+  ];
+
+  function twoDigits(n) {
+    if (n < 20) return a[n];
+    return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+  }
+
+  function threeDigits(n) {
+    if (n < 100) return twoDigits(n);
+    return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + twoDigits(n % 100) : "");
+  }
+
+  let rupees = Math.floor(num);
+  let paise = Math.round((num - rupees) * 100);
+
+  let str = "";
+
+  if (rupees >= 10000000) { // Crore
+    str += twoDigits(Math.floor(rupees / 10000000)) + " Crore ";
+    rupees %= 10000000;
+  }
+
+  if (rupees >= 100000) { // Lakh
+    str += twoDigits(Math.floor(rupees / 100000)) + " Lakh ";
+    rupees %= 100000;
+  }
+
+  if (rupees >= 1000) { // Thousand
+    str += twoDigits(Math.floor(rupees / 1000)) + " Thousand ";
+    rupees %= 1000;
+  }
+
+  if (rupees > 0) {
+    str += threeDigits(rupees);
+  }
+
+  if (str === "") str = "Zero";
+
+  return (
+    str.trim() +
+    " Rupees and " +
+    (paise ? twoDigits(paise) : "Zero") +
+    " Paise Only"
+  );
 }
-function saveBill(saveAsNew){
-  let billNo = (editBillNo && !saveAsNew)
-    ? editBillNo
-    : "BILL-" + Date.now();
 
-  let data = {
-    billNo,
-    date: billDate.value,
-    site: siteName.value,
-    gstType: document.querySelector('input[name="gstType"]:checked').value,
-    items: [...items.rows].map(r => ({
-      desc: r.cells[1].children[0].value,
-      unit: r.cells[2].children[0].value,
-      qty: r.cells[3].children[0].value,
-      rate: r.cells[4].children[0].value,
-      amount: r.querySelector(".amount").innerText
-    })),
-    subTotal: subTotal.innerText,
-    sgst: sgst.innerText,
-    cgst: cgst.innerText,
-    total: grandTotal.innerText,
-    words: amountWords.innerText,
-    createdAt: new Date().toISOString()
-  };
-
-  localStorage.setItem("bill_" + billNo, JSON.stringify(data));
-  editBillNo = billNo;
-
-  bootstrap.Modal.getInstance(saveOptionModal)?.hide();
-  alert("Saved : " + billNo);
-}
 
 
 /* ===== PAST BILLS ===== */
