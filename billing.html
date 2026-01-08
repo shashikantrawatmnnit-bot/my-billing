@@ -23,16 +23,17 @@ input.bill-input{width:100%;border:none;outline:none}
   width: auto;
   text-align: right;
 }
+.print-only { display: none; }
 
 #siteName{
-  width: auto;
+  
   text-align: left;
 }
 
 /* PDF -- inorder to change top margin in PDF file edit "margin-top"PRINT */
 @media print{
  @page{size:A4;margin-top:7cm;margin-left:1cm;margin-right:1cm;margin-bottom:2cm}
- header,footer,  .no-print,.action-col {display: none !important;}
+ header,footer,  .action-col {display: none !important;}
  .container,.card,.card-body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;box-shadow:none!important;border:none!important}
 
    input[type="date"]::-webkit-calendar-picker-indicator {
@@ -44,6 +45,19 @@ input.bill-input{width:100%;border:none;outline:none}
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: textfield;
+  }
+  .no-print{
+    display:none !important;   /* textarea hide */
+  }
+
+  .print-only{
+    display:block !important;  /* span show */
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+
+  .bill td{
+    vertical-align:top;
   }
 }
 </style>
@@ -179,22 +193,39 @@ const items=document.getElementById("items");
 let editBillNo=null;
 
 /* ===== ROW FACTORY ===== */
-function createItemRow(d={}){
- const r=items.insertRow();
- r.innerHTML=`
- <td></td>
- <td><input class="bill-input" value="${d.desc||''}"></td>
- <td><input class="bill-input" value="${d.unit||''}"></td>
- <td><input type="number" class="bill-input" value="${d.qty||''}" oninput="calculate()"></td>
- <td><input type="number" class="bill-input" value="${d.rate||''}" oninput="calculate()"></td>
- <td class="right amount">0.00</td>
- <td class="text-center action-col no-print">
-  <button class="btn btn-sm btn-outline-secondary" onclick="moveUp(this)">⬆</button>
-  <button class="btn btn-sm btn-outline-secondary" onclick="moveDown(this)">⬇</button>
-  <button class="btn btn-sm btn-outline-danger" onclick="deleteRow(this)">✖</button>
- </td>`;
- reindex(); calculate();
+function createItemRow(d = {}) {
+  const r = items.insertRow();
+
+  r.innerHTML = `
+    <td class="text-center"></td>
+
+    <!-- DESCRIPTION -->
+    <td>
+      <textarea
+        class="bill-input desc-input no-print"
+        rows="1"
+        oninput="autoGrow(this)"
+      >${d.desc || ""}</textarea>
+
+      <span class="desc-print print-only">${d.desc || ""}</span>
+    </td>
+
+    <td><input class="bill-input" value="${d.unit || ""}"></td>
+    <td><input type="number" class="bill-input" value="${d.qty || ""}" oninput="calculate()"></td>
+    <td><input type="number" class="bill-input" value="${d.rate || ""}" oninput="calculate()"></td>
+    <td class="right amount">0.00</td>
+
+    <td class="text-center action-col no-print">
+      <button onclick="moveUp(this)">⬆</button>
+      <button onclick="moveDown(this)">⬇</button>
+      <button onclick="deleteRow(this)">✖</button>
+    </td>
+  `;
+
+  reindex();
+  calculate();
 }
+
 function addRow(){createItemRow();}
 function reindex(){[...items.rows].forEach((r,i)=>r.cells[0].innerText=i+1);}
 
@@ -389,6 +420,16 @@ function beforePrint(){
   document.getElementById("printDate").innerText =
     "Date : " + billDate.value;
   document.getElementById("printDate").classList.remove("d-none");
+}
+function syncPrintText(){
+  document.querySelectorAll(".desc-input").forEach(ta=>{
+    const span = ta.closest("td").querySelector(".desc-print");
+    if(span) span.innerText = ta.value;
+  });
+}
+
+function beforePrint(){
+  syncPrintText();
 }
 
 window.onbeforeprint = beforePrint;
